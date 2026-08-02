@@ -218,6 +218,7 @@ public partial class MainPage : ContentPage
     private void OnHiddenTextChanged(object? sender, TextChangedEventArgs e)
     {
         var raw = HiddenInput.Text ?? "";
+        TypingPreview.Text = raw.TrimEnd('\r', '\n');   // 触控板正中间的预览：实时显示打出来的字
 
         // 手机键盘回车 → 多行编辑器会插入换行 → 同步回车到电脑并移除换行
         // （多行编辑器回车永远不会触发"完成"，键盘因此不会消失）

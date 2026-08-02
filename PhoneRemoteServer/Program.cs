@@ -119,7 +119,15 @@ app.MapPost("/api/key", (KeyCommand cmd) =>
     }
     if (text.Length > 0)
     {
-        KeyboardControl.TypeText(text);
+        // 长文本（语音输入吐出的整段）走剪贴板粘贴：微信等输入框对逐字高速注入会吞字，粘贴最稳
+        if (text.Length > 6)
+        {
+            KeyboardControl.TypeByClipboard(text);
+        }
+        else
+        {
+            KeyboardControl.TypeText(text);
+        }
     }
     return Results.Ok(new { ok = true, chars = text.Length, backspaces = bs, enter = cmd.Enter == true });
 });

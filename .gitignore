@@ -6,6 +6,7 @@ obj/
 *.log
 
 # ===== 本机工具（不提交，体积巨大）=====
+tools/jdk/
 tools/jdk17/
 tools/android-sdk/
 

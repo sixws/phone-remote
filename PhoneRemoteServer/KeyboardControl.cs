@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace PhoneRemoteServer;
 
@@ -73,6 +74,78 @@ public static class KeyboardControl
             inputs[1].U.ki = new KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP };
             SendInput(2, inputs, Marshal.SizeOf<INPUT>());
         }
+    }
+
+    /// <summary>长文本用剪贴板粘贴：微信等输入框对逐字高速注入会吞字，粘贴最稳（语音输入整段走这里）</summary>
+    public static void TypeByClipboard(string text)
+    {
+        if (text.Length == 0) return;
+        SetClipboardText(text);
+
+        // Ctrl+V
+        var inputs = new INPUT[4];
+        inputs[0].type = INPUT_KEYBOARD;
+        inputs[0].U.ki = new KEYBDINPUT { wVk = 0x11, wScan = 0, dwFlags = 0 };               // Ctrl 按下
+        inputs[1].type = INPUT_KEYBOARD;
+        inputs[1].U.ki = new KEYBDINPUT { wVk = 0x56, wScan = 0, dwFlags = 0 };               // V 按下
+        inputs[2].type = INPUT_KEYBOARD;
+        inputs[2].U.ki = new KEYBDINPUT { wVk = 0x56, wScan = 0, dwFlags = KEYEVENTF_KEYUP }; // V 抬起
+        inputs[3].type = INPUT_KEYBOARD;
+        inputs[3].U.ki = new KEYBDINPUT { wVk = 0x11, wScan = 0, dwFlags = KEYEVENTF_KEYUP }; // Ctrl 抬起
+        SendInput(4, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    /// <summary>Win32 剪贴板写入 Unicode 文本（控制台进程无需 STA；重试避开微信等占用剪贴板）</summary>
+    private static void SetClipboardText(string text)
+    {
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            if (!TryOpenClipboard()) continue;
+            try
+            {
+                EmptyClipboard();
+                var bytes = Encoding.Unicode.GetBytes(text + "\0");
+                var h = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)bytes.Length);
+                var p = GlobalLock(h);
+                Marshal.Copy(bytes, 0, p, bytes.Length);
+                GlobalUnlock(h);
+                SetClipboardData(CF_UNICODETEXT, h);
+                CloseClipboard();
+                return;
+            }
+            catch
+            {
+                CloseClipboard();
+            }
+        }
+    }
+
+    private const uint CF_UNICODETEXT = 13;
+    private const uint GMEM_MOVEABLE = 0x0002;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+    [DllImport("user32.dll")]
+    private static extern bool EmptyClipboard();
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+    [DllImport("user32.dll")]
+    private static extern bool CloseClipboard();
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GlobalLock(IntPtr hMem);
+    [DllImport("kernel32.dll")]
+    private static extern bool GlobalUnlock(IntPtr hMem);
+
+    private static bool TryOpenClipboard()
+    {
+        for (var i = 0; i < 10; i++)
+        {
+            if (OpenClipboard(IntPtr.Zero)) return true;
+            Thread.Sleep(20);
+        }
+        return false;
     }
 
     /// <summary>发送 count 个退格键（手机删字时电脑同步删除）</summary>

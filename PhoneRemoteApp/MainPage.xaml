@@ -55,6 +55,20 @@
                 MoveRequested="OnTouchpadMove"
                 ScrollRequested="OnTouchpadScroll" />
 
+            <!--  打字预览：字显示在触控板正中间，纯展示点不到（穿透到触控板），太长自动换行  -->
+            <Label
+                x:Name="TypingPreview"
+                InputTransparent="True"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Margin="56,0,56,0"
+                FontSize="24"
+                TextColor="#FFFFFF"
+                Opacity="0.95"
+                HorizontalTextAlignment="Center"
+                VerticalTextAlignment="Center"
+                LineBreakMode="WordWrap" />
+
             <!--  右侧滚动侧边栏：半透明黑玻璃 + 阴影（浮在渐变上有立体感）  -->
             <Border
                 x:Name="ScrollSidebar"
