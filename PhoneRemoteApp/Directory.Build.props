@@ -1,0 +1,8 @@
+<Project>
+  <!-- 构建环境：指向项目内自带的 JDK 与 Android SDK（tools/ 目录，不污染系统） -->
+  <PropertyGroup>
+    <AndroidSdkDirectory>$(MSBuildThisFileDirectory)..\tools\android-sdk</AndroidSdkDirectory>
+    <JavaSdkDirectory>$(MSBuildThisFileDirectory)..\tools\jdk</JavaSdkDirectory>
+    <AcceptAndroidSDKLicenses>true</AcceptAndroidSDKLicenses>
+  </PropertyGroup>
+</Project>

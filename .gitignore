@@ -1,0 +1,18 @@
+# ===== 构建输出 =====
+bin/
+obj/
+*.user
+.vs/
+*.log
+
+# ===== 本机工具（不提交，体积巨大）=====
+tools/jdk17/
+tools/android-sdk/
+
+# ===== 项目构建目录（release/ 里的正式包会单独提交）=====
+PhoneRemoteApp/bin/
+PhoneRemoteApp/obj/
+PhoneRemoteServer/bin/
+PhoneRemoteServer/obj/
+PhoneRemoteServer.Tests/bin/
+PhoneRemoteServer.Tests/obj/

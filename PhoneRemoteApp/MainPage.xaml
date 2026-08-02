@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="PhoneRemoteApp.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:PhoneRemoteApp"
+    BackgroundColor="#0a0a0a"
+    Shell.NavBarIsVisible="False">
+
+    <ContentPage.Resources>
+        <!--  底部鼠标三键：简简单单的空白黑色矩形  -->
+        <Style x:Key="MouseBtn" TargetType="Button">
+            <!--  半透明白玻璃（#8C=55% 不透明），透出背后的彩色渐变，比黑底亮  -->
+            <Setter Property="BackgroundColor" Value="#1AFFFFFF" />
+            <Setter Property="BorderColor" Value="#4DFFFFFF" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="HeightRequest" Value="76" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <!--  投影：浮在彩色渐变上，有立体感；改大 Offset 阴影更远  -->
+                    <Shadow
+                        Brush="Black"
+                        Opacity="0.5"
+                        Radius="14"
+                        Offset="0,10" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup x:Name="CommonStates">
+                        <VisualState x:Name="Normal" />
+                        <VisualState x:Name="Pressed">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="#CCFFFFFF" />
+                                <Setter Property="Scale" Value="0.96" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!--  ============ 触控板 + 滚轮条 ============  -->
+        <Grid Grid.Row="0" Margin="0,0,0,0">
+
+            <!--  迷幻霓虹触控板  -->
+            <local:TouchpadView
+                x:Name="Touchpad"
+                ClickRequested="OnTouchpadClick"
+                MoveRequested="OnTouchpadMove"
+                ScrollRequested="OnTouchpadScroll" />
+
+            <!--  右侧滚动侧边栏：半透明黑玻璃 + 阴影（浮在渐变上有立体感）  -->
+            <Border
+                x:Name="ScrollSidebar"
+                Margin="0,10,10,58"
+                BackgroundColor="#33FFFFFF"
+                HorizontalOptions="End"
+                StrokeShape="RoundRectangle 0"
+                StrokeThickness="0"
+                VerticalOptions="Fill"
+                WidthRequest="44">
+                <Border.Shadow>
+                    <Shadow
+                        Brush="Black"
+                        Opacity="0.5"
+                        Radius="14"
+                        Offset="0,6" />
+                </Border.Shadow>
+                <Border.GestureRecognizers>
+                    <PanGestureRecognizer PanUpdated="OnSidebarPan" />
+                </Border.GestureRecognizers>
+            </Border>
+
+            <!--  左上角：设置（纯图标，无按钮底色）  -->
+            <Image
+                Margin="5"
+                HeightRequest="48"
+                HorizontalOptions="Start"
+                Opacity="0.45"
+                Source="settings.png"
+                VerticalOptions="Start"
+                WidthRequest="48">
+                <Image.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnSettingsClicked" />
+                </Image.GestureRecognizers>
+            </Image>
+
+            <!--  右上角：唤出键盘（纯图标，无按钮底色）  -->
+            <Image
+                Margin="0,5,70,0"
+                Aspect="AspectFit"
+                HeightRequest="48"
+                HorizontalOptions="End"
+                Opacity="0.4"
+                Source="keyboard.png"
+                VerticalOptions="Start"
+                WidthRequest="48">
+                <Image.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnKeyboardClicked" />
+                </Image.GestureRecognizers>
+            </Image>
+
+            <!--  隐藏输入（无输入条，全透明；多行编辑器保证回车不收起键盘，打字实时镜像到电脑）  -->
+            <Editor
+                x:Name="HiddenInput"
+                HeightRequest="1"
+                HorizontalOptions="End"
+                InputTransparent="False"
+                IsVisible="True"
+                Opacity="0"
+                TextChanged="OnHiddenTextChanged"
+                VerticalOptions="End"
+                WidthRequest="1" />
+        </Grid>
+
+        <!--  ============ 底部三键 2 : 1 : 2（空白黑色矩形） ============  -->
+        <Grid
+            Grid.Row="0"
+            Padding="4,0,4,5"
+            ColumnDefinitions="2*,1*,2*"
+            ColumnSpacing="3"
+            HorizontalOptions="Fill"
+            VerticalOptions="End">
+            <Button
+                x:Name="LeftBtn"
+                Pressed="OnLeftPressed"
+                Released="OnLeftReleased"
+                Style="{StaticResource MouseBtn}" />
+            <Button
+                x:Name="MiddleBtn"
+                Grid.Column="1"
+                Pressed="OnMiddlePressed"
+                Released="OnMiddleReleased"
+                Style="{StaticResource MouseBtn}" />
+            <Button
+                x:Name="RightBtn"
+                Grid.Column="2"
+                Pressed="OnRightPressed"
+                Released="OnRightReleased"
+                Style="{StaticResource MouseBtn}" />
+        </Grid>
+
+        <!--  ============ 键盘预留区：一片空的黑色区域（键盘弹出时只覆盖这里） ============  -->
+        <Grid
+            x:Name="KeyboardReserve"
+            Grid.Row="2"
+            BackgroundColor="#0a0a0a">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnKeyboardClicked" />
+            </Grid.GestureRecognizers>
+        </Grid>
+
+    </Grid>
+</ContentPage>

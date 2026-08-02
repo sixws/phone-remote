@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 在 Android 平台上跳过此项目的构建和发布 -->
+    <ExcludePlatforms Condition="'$(RuntimeIdentifier)' == 'android'">true</ExcludePlatforms>
+  </PropertyGroup>
+
+</Project>

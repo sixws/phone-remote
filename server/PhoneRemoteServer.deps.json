@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "PhoneRemoteServer/1.0.0": {
+        "runtime": {
+          "PhoneRemoteServer.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "PhoneRemoteServer/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

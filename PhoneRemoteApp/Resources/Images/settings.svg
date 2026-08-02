@@ -1,0 +1,9 @@
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <!-- 设置：三条调节滑杆 -->
+    <line x1="10" y1="14" x2="38" y2="14" stroke="#e8e8e8" stroke-width="4" stroke-linecap="round" />
+    <circle cx="26" cy="14" r="6" fill="#0a0a0a" stroke="#e8e8e8" stroke-width="4" />
+    <line x1="10" y1="27" x2="38" y2="27" stroke="#e8e8e8" stroke-width="4" stroke-linecap="round" />
+    <circle cx="18" cy="27" r="6" fill="#0a0a0a" stroke="#e8e8e8" stroke-width="4" />
+    <line x1="10" y1="40" x2="38" y2="40" stroke="#e8e8e8" stroke-width="4" stroke-linecap="round" />
+    <circle cx="32" cy="40" r="6" fill="#0a0a0a" stroke="#e8e8e8" stroke-width="4" />
+</svg>

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="PhoneRemoteApp/PhoneRemoteApp.csproj" />
+  <Project Path="PhoneRemoteServer.Tests/PhoneRemoteServer.Tests.csproj" />
+  <Project Path="PhoneRemoteServer/PhoneRemoteServer.csproj" />
+</Solution>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PhoneRemoteApp.SettingsPage"
+             Title="设置"
+             BackgroundColor="#0a0a0a">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+
+            <Label Text="连接" FontSize="13" TextColor="#777" />
+            <HorizontalStackLayout Spacing="10">
+                <Ellipse x:Name="StatusDot" WidthRequest="12" HeightRequest="12" Fill="#666" VerticalOptions="Center" />
+                <Label x:Name="StatusText" Text="正在寻找电脑…" FontSize="15" TextColor="#e8e8e8" />
+            </HorizontalStackLayout>
+            <Button Text="重新扫描" Clicked="OnRescanClicked"
+                    BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626"
+                    BorderWidth="1" CornerRadius="12" />
+
+            <BoxView HeightRequest="1" Color="#1f1f1f" Margin="0,8,0,8" />
+
+            <Label Text="光标灵敏度" FontSize="13" TextColor="#777" />
+            <Slider x:Name="SensSlider" Minimum="0.3" Maximum="3" Value="1" ValueChanged="OnSensChanged" />
+
+            <BoxView HeightRequest="1" Color="#1f1f1f" Margin="0,8,0,8" />
+
+            <Label Text="点击音效" FontSize="13" TextColor="#777" />
+            <Switch x:Name="SoundSwitch" Toggled="OnSoundToggled" />
+
+            <BoxView HeightRequest="1" Color="#1f1f1f" Margin="0,8,0,8" />
+
+            <Label Text="触控板背景配色" FontSize="13" TextColor="#777" />
+            <FlexLayout Wrap="Wrap" AlignItems="Center">
+                <Button Text="弥散霓虹" Clicked="OnPresetClicked" CommandParameter="p0" Margin="0,0,6,6"
+                        BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626" BorderWidth="1" CornerRadius="10" FontSize="13" Padding="12,6" />
+                <Button Text="赛博荧光" Clicked="OnPresetClicked" CommandParameter="p1" Margin="0,0,6,6"
+                        BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626" BorderWidth="1" CornerRadius="10" FontSize="13" Padding="12,6" />
+                <Button Text="熔岩落日" Clicked="OnPresetClicked" CommandParameter="p2" Margin="0,0,6,6"
+                        BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626" BorderWidth="1" CornerRadius="10" FontSize="13" Padding="12,6" />
+                <Button Text="冰岛极光" Clicked="OnPresetClicked" CommandParameter="p3" Margin="0,0,6,6"
+                        BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626" BorderWidth="1" CornerRadius="10" FontSize="13" Padding="12,6" />
+                <Button Text="经典彩虹" Clicked="OnPresetClicked" CommandParameter="p4" Margin="0,0,6,6"
+                        BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626" BorderWidth="1" CornerRadius="10" FontSize="13" Padding="12,6" />
+                <Button Text="🎲 随机" Clicked="OnPresetClicked" CommandParameter="rand" Margin="0,0,6,6"
+                        BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626" BorderWidth="1" CornerRadius="10" FontSize="13" Padding="12,6" />
+            </FlexLayout>
+            <HorizontalStackLayout x:Name="SwatchRow" Spacing="8" />
+            <Label Text="换配色即时生效，返回触控板即可看到" FontSize="11" TextColor="#555" />
+
+            <BoxView HeightRequest="1" Color="#1f1f1f" Margin="0,8,0,8" />
+
+            <Label Text="电脑输入卡住时（任务栏 Bug），点这里恢复" FontSize="12" TextColor="#777" />
+            <Button Text="🔄 一键恢复输入" Clicked="OnRecoverClicked"
+                    BackgroundColor="#161616" TextColor="#e8e8e8" BorderColor="#262626"
+                    BorderWidth="1" CornerRadius="12" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

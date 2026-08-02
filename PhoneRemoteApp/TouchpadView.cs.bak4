@@ -1,0 +1,191 @@
+using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Graphics;
+
+namespace PhoneRemoteApp;
+
+/// <summary>触控板事件参数</summary>
+public class ClickArgs : EventArgs
+{
+    public ClickArgs(string button, string action)
+    {
+        Button = button;
+        Action = action;
+    }
+
+    /// <summary>left / right</summary>
+    public string Button { get; }
+
+    /// <summary>click / dblclick</summary>
+    public string Action { get; }
+}
+
+/// <summary>流动的迷幻霓虹光晕（黑底上缓慢漂移的虹彩渐变）</summary>
+public class AuroraDrawable : IDrawable
+{
+    private double _t;
+
+    // 三团光的"家"比例（左下 / 中央 / 右上）与各自半径系数
+    private static readonly float[] HomeX = { 0.26f, 0.50f, 0.74f };
+    private static readonly float[] HomeY = { 0.72f, 0.50f, 0.28f };
+    private static readonly float[] Radii = { 1.1f, 1.2f, 1.1f };
+
+    // 三团光：布朗运动状态（位置 + 速度）
+    private readonly Blob[] _blobs;
+
+    private sealed class Blob
+    {
+        public float X, Y, VX, VY;     // 当前位置与速度（随机游走）
+        public double HueBase, Phase;  // 颜色基准色相与呼吸相位
+    }
+
+    public AuroraDrawable()
+    {
+        _blobs = new Blob[3];
+        for (var i = 0; i < _blobs.Length; i++)
+        {
+            _blobs[i] = new Blob
+            {
+                HueBase = i switch { 0 => 172.0, 1 => 258.0, _ => 40.0 }, // 青绿 / 靛紫 / 琥珀
+                Phase = i * 1.5,
+            };
+        }
+    }
+
+    public void Tick() => _t += 0.028;   // 动画速度：数字越大动得越快
+
+    public void Draw(ICanvas canvas, RectF dirtyRect)
+    {
+        var w = dirtyRect.Width;
+        var h = dirtyRect.Height;
+        if (w <= 0 || h <= 0) return;
+
+        // 深灰底
+        canvas.FillColor = Color.FromArgb("#0d0d11");
+        canvas.FillRectangle(dirtyRect);
+
+        var r = MathF.Min(w, h) * 0.3f;   // 光团半径基数（想更"满"就加大，更淡就减小）
+
+        for (var i = 0; i < _blobs.Length; i++)
+        {
+            var b = _blobs[i];
+            UpdateBrownian(b, w * HomeX[i], h * HomeY[i], w, h);
+
+            // 颜色呼吸（缓慢；无规则的是位置，颜色保持柔和渐变）
+            var hue = b.HueBase + 30 * Math.Sin(_t * 0.5 + b.Phase);
+            DrawBlob(canvas, b.X, b.Y, r * Radii[i], HsvToColor(hue, 0.85, 0.98));
+        }
+    }
+
+    /// <summary>布朗运动：每帧随机扰动速度 → 位置平滑无规则游走；离"家"太远会被轻轻拉回（不撞墙）</summary>
+    private static void UpdateBrownian(Blob b, float homeX, float homeY, float w, float h)
+    {
+        // 随机加速度（完全无规则）
+        b.VX += (float)(Random.Shared.NextDouble() * 2 - 1) * 0.30f;
+        b.VY += (float)(Random.Shared.NextDouble() * 2 - 1) * 0.30f;
+
+        // 限速：太快会晃眼（≈33px/s）
+        var speed = MathF.Sqrt(b.VX * b.VX + b.VY * b.VY);
+        const float maxSpeed = 1.1f;
+        if (speed > maxSpeed)
+        {
+            b.VX *= maxSpeed / speed;
+            b.VY *= maxSpeed / speed;
+        }
+
+        b.X += b.VX;
+        b.Y += b.VY;
+
+        // 软边界：离"家"超过范围轻轻拉回（像弹簧，游走不会跑丢）
+        var dx = b.X - homeX;
+        var dy = b.Y - homeY;
+        var dist = MathF.Sqrt(dx * dx + dy * dy);
+        var limit = MathF.Min(w, h) * 0.10f;
+        if (dist > limit)
+        {
+            var pull = (dist - limit) * 0.01f;
+            b.VX -= dx / dist * pull;
+            b.VY -= dy / dist * pull;
+        }
+    }
+     
+    /// <summary>高斯衰减的光晕团：中心实色 → 边缘平滑淡出（模拟超大半径模糊，无硬边）</summary>
+    private static void DrawBlob(ICanvas canvas, float x, float y, float r, Color color)
+    {
+        const int rings = 18;                     // 圈数越多越细腻
+        for (var i = 0; i < rings; i++)
+        {
+            var k = i / (float)(rings - 1);       // 0=中心 … 1=边缘
+            var radius = r * (1f - k * 0.90f);
+            var alpha = 0.32f * MathF.Exp(-(k / 0.65f) * (k / 0.65f)); // 0.45 越大衰减越慢=越弥散
+            canvas.FillColor = color.WithAlpha(alpha);
+            canvas.FillCircle(x, y, radius);
+        }
+    }
+
+    private static Color HsvToColor(double h, double s, double v)
+    {
+        var c = v * s;
+        var x = c * (1 - Math.Abs(h / 60 % 2 - 1));
+        var m = v - c;
+        (double R, double G, double B) rgb = h switch
+        {
+            < 60 => (c, x, 0),
+            < 120 => (x, c, 0),
+            < 180 => (0, c, x),
+            < 240 => (0, x, c),
+            < 300 => (x, 0, c),
+            _ => (c, 0, x),
+        };
+        return Color.FromRgb((rgb.R + m) * 255, (rgb.G + m) * 255, (rgb.B + m) * 255);
+    }
+}
+
+/// <summary>
+/// 触控板：滑动=移动光标，轻点=左键，连点两次=双击，长按(≥0.5秒)=右键，双指滑动=滚轮。
+/// 手势由安卓原生触摸跟踪实现（Platforms/Android/GestureTracker），背景为流动的迷幻霓虹。
+/// </summary>
+public class TouchpadView : Border
+{
+    /// <summary>相对位移（像素）</summary>
+    public event EventHandler<Point>? MoveRequested;
+
+    /// <summary>点击事件</summary>
+    public event EventHandler<ClickArgs>? ClickRequested;
+
+    /// <summary>滚轮事件（正数=向上）</summary>
+    public event EventHandler<int>? ScrollRequested;
+
+    // 供原生手势跟踪（GestureTracker）触发事件
+    public void RaiseMove(double dx, double dy) => MoveRequested?.Invoke(this, new Point((float)dx, (float)dy));
+    public void RaiseClick(string button, string action) => ClickRequested?.Invoke(this, new ClickArgs(button, action));
+    public void RaiseScroll(int delta) => ScrollRequested?.Invoke(this, delta);
+
+    private readonly AuroraDrawable _aurora = new();
+    private IDispatcherTimer? _timer;
+
+    public TouchpadView()
+    {
+        BackgroundColor = Color.FromArgb("#0a0a0a");
+        StrokeShape = new RoundRectangle { CornerRadius = 10 };
+        Stroke = Color.FromArgb("#1f1f1f");
+        StrokeThickness = 1;
+        Padding = 0;
+
+        // 迷幻背景（30fps 动画）
+        var gfx = new GraphicsView { Drawable = _aurora };
+        Content = gfx;
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object? sender, EventArgs e)
+    {
+        _timer = Dispatcher.CreateTimer();
+        _timer.Interval = TimeSpan.FromMilliseconds(33);
+        _timer.Tick += (_, _) =>
+        {
+            _aurora.Tick();
+            (Content as GraphicsView)?.Invalidate();
+        };
+        _timer.Start();
+    }
+}
