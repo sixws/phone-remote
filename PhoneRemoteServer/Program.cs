@@ -119,15 +119,8 @@ app.MapPost("/api/key", (KeyCommand cmd) =>
     }
     if (text.Length > 0)
     {
-        // 3 字以上走剪贴板粘贴：微信等输入框对逐字高速注入会吞字（尤其第一击），粘贴 100% 不丢
-        if (text.Length >= 3)
-        {
-            KeyboardControl.TypeByClipboard(text);
-        }
-        else
-        {
-            KeyboardControl.TypeText(text);
-        }
+        // 终极方案：一律剪贴板粘贴 —— 微信无论长短都吞逐字注入，粘贴 100% 不丢字
+        KeyboardControl.TypeByClipboard(text);
     }
     return Results.Ok(new { ok = true, chars = text.Length, backspaces = bs, enter = cmd.Enter == true });
 });

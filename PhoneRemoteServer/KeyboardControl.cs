@@ -13,6 +13,9 @@ public static class KeyboardControl
     private const ushort VK_BACK = 0x08;
     private const ushort VK_RETURN = 0x0D;
 
+    // 注入锁：键盘/粘贴操作全部串行，防止并发请求互相打断导致吞字
+    private static readonly object InjectLock = new();
+
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
@@ -63,39 +66,48 @@ public static class KeyboardControl
     /// <summary>把整段文字作为按键事件序列注入（跳过代理对字符，如部分 emoji）</summary>
     public static void TypeText(string text)
     {
-        // 预热 + 字间留 3ms：微信等输入框对"高速注入的第一击"会吞字，先让目标控件醒一醒
-        Thread.Sleep(12);
-        foreach (var ch in text)
+        lock (InjectLock)
         {
-            if (char.IsSurrogate(ch)) continue; // 代理对无法单字符注入，跳过
+            // 预热 + 字间留 3ms（正常情况下已不再走这里，保留作为兜底）
+            Thread.Sleep(12);
+            foreach (var ch in text)
+            {
+                if (char.IsSurrogate(ch)) continue; // 代理对无法单字符注入，跳过
 
-            var inputs = new INPUT[2];
-            inputs[0].type = INPUT_KEYBOARD;
-            inputs[0].U.ki = new KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = KEYEVENTF_UNICODE };
-            inputs[1].type = INPUT_KEYBOARD;
-            inputs[1].U.ki = new KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP };
-            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
-            Thread.Sleep(3);
+                var inputs = new INPUT[2];
+                inputs[0].type = INPUT_KEYBOARD;
+                inputs[0].U.ki = new KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = KEYEVENTF_UNICODE };
+                inputs[1].type = INPUT_KEYBOARD;
+                inputs[1].U.ki = new KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP };
+                SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+                Thread.Sleep(3);
+            }
         }
     }
 
-    /// <summary>长文本用剪贴板粘贴：微信等输入框对逐字高速注入会吞字，粘贴最稳（语音输入整段走这里）</summary>
+    /// <summary>终极方案：所有文字都走剪贴板粘贴 —— 微信对逐字注入/高速输入一律吞字，粘贴是唯一不丢字的方式</summary>
     public static void TypeByClipboard(string text)
     {
         if (text.Length == 0) return;
-        SetClipboardText(text);
+        lock (InjectLock)
+        {
+            SetClipboardText(text);
+            Thread.Sleep(30);   // 等剪贴板就绪，目标程序能读到
 
-        // Ctrl+V
-        var inputs = new INPUT[4];
-        inputs[0].type = INPUT_KEYBOARD;
-        inputs[0].U.ki = new KEYBDINPUT { wVk = 0x11, wScan = 0, dwFlags = 0 };               // Ctrl 按下
-        inputs[1].type = INPUT_KEYBOARD;
-        inputs[1].U.ki = new KEYBDINPUT { wVk = 0x56, wScan = 0, dwFlags = 0 };               // V 按下
-        inputs[2].type = INPUT_KEYBOARD;
-        inputs[2].U.ki = new KEYBDINPUT { wVk = 0x56, wScan = 0, dwFlags = KEYEVENTF_KEYUP }; // V 抬起
-        inputs[3].type = INPUT_KEYBOARD;
-        inputs[3].U.ki = new KEYBDINPUT { wVk = 0x11, wScan = 0, dwFlags = KEYEVENTF_KEYUP }; // Ctrl 抬起
-        SendInput(4, inputs, Marshal.SizeOf<INPUT>());
+            // Ctrl+V
+            var inputs = new INPUT[4];
+            inputs[0].type = INPUT_KEYBOARD;
+            inputs[0].U.ki = new KEYBDINPUT { wVk = 0x11, wScan = 0, dwFlags = 0 };               // Ctrl 按下
+            inputs[1].type = INPUT_KEYBOARD;
+            inputs[1].U.ki = new KEYBDINPUT { wVk = 0x56, wScan = 0, dwFlags = 0 };               // V 按下
+            inputs[2].type = INPUT_KEYBOARD;
+            inputs[2].U.ki = new KEYBDINPUT { wVk = 0x56, wScan = 0, dwFlags = KEYEVENTF_KEYUP }; // V 抬起
+            inputs[3].type = INPUT_KEYBOARD;
+            inputs[3].U.ki = new KEYBDINPUT { wVk = 0x11, wScan = 0, dwFlags = KEYEVENTF_KEYUP }; // Ctrl 抬起
+            SendInput(4, inputs, Marshal.SizeOf<INPUT>());
+
+            Thread.Sleep(150);  // 关键：等微信把文字完全插入，再做下一步（退格/下次粘贴），否则会被吞
+        }
     }
 
     /// <summary>Win32 剪贴板写入 Unicode 文本（控制台进程无需 STA；重试避开微信等占用剪贴板）</summary>
@@ -151,17 +163,24 @@ public static class KeyboardControl
         return false;
     }
 
-    /// <summary>发送 count 个退格键（手机删字时电脑同步删除）</summary>
+    /// <summary>发送 count 个退格键（手机删字时电脑同步删除；逐个间隔防吞）</summary>
     public static void Backspace(int count)
     {
-        for (var i = 0; i < count; i++)
+        lock (InjectLock)
         {
-            SendVk(VK_BACK);
+            for (var i = 0; i < count; i++)
+            {
+                SendVk(VK_BACK);
+                Thread.Sleep(8);
+            }
         }
     }
 
     /// <summary>发送回车键（手机按回车时电脑同步回车）</summary>
-    public static void Enter() => SendVk(VK_RETURN);
+    public static void Enter()
+    {
+        lock (InjectLock) SendVk(VK_RETURN);
+    }
 
     private static void SendVk(ushort vk)
     {
