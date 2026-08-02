@@ -63,6 +63,8 @@ public static class KeyboardControl
     /// <summary>把整段文字作为按键事件序列注入（跳过代理对字符，如部分 emoji）</summary>
     public static void TypeText(string text)
     {
+        // 预热 + 字间留 3ms：微信等输入框对"高速注入的第一击"会吞字，先让目标控件醒一醒
+        Thread.Sleep(12);
         foreach (var ch in text)
         {
             if (char.IsSurrogate(ch)) continue; // 代理对无法单字符注入，跳过
@@ -73,6 +75,7 @@ public static class KeyboardControl
             inputs[1].type = INPUT_KEYBOARD;
             inputs[1].U.ki = new KEYBDINPUT { wVk = 0, wScan = ch, dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP };
             SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+            Thread.Sleep(3);
         }
     }
 

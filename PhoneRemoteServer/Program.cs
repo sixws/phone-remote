@@ -119,8 +119,8 @@ app.MapPost("/api/key", (KeyCommand cmd) =>
     }
     if (text.Length > 0)
     {
-        // 长文本（语音输入吐出的整段）走剪贴板粘贴：微信等输入框对逐字高速注入会吞字，粘贴最稳
-        if (text.Length > 6)
+        // 3 字以上走剪贴板粘贴：微信等输入框对逐字高速注入会吞字（尤其第一击），粘贴 100% 不丢
+        if (text.Length >= 3)
         {
             KeyboardControl.TypeByClipboard(text);
         }
