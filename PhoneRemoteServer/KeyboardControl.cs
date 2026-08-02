@@ -68,6 +68,7 @@ public static class KeyboardControl
     {
         lock (InjectLock)
         {
+            WaitForSettle();
             // 预热 + 字间留 3ms（正常情况下已不再走这里，保留作为兜底）
             Thread.Sleep(12);
             foreach (var ch in text)
@@ -85,6 +86,10 @@ public static class KeyboardControl
         }
     }
 
+    /// <summary>两次注入最小间隔：等微信把上次粘贴完全插入（只在"下一步操作"前补，单次粘贴不等待）</summary>
+    private const long MinPasteGapMs = 150;
+    private static long _lastPasteMs;   // 上一次粘贴完成时刻（Environment.TickCount64 单调递增）
+
     /// <summary>终极方案：所有文字都走剪贴板粘贴 —— 微信对逐字注入/高速输入一律吞字，粘贴是唯一不丢字的方式</summary>
     public static void TypeByClipboard(string text)
     {
@@ -92,7 +97,7 @@ public static class KeyboardControl
         lock (InjectLock)
         {
             SetClipboardText(text);
-            Thread.Sleep(30);   // 等剪贴板就绪，目标程序能读到
+            Thread.Sleep(15);   // 剪贴板就绪
 
             // Ctrl+V
             var inputs = new INPUT[4];
@@ -106,8 +111,15 @@ public static class KeyboardControl
             inputs[3].U.ki = new KEYBDINPUT { wVk = 0x11, wScan = 0, dwFlags = KEYEVENTF_KEYUP }; // Ctrl 抬起
             SendInput(4, inputs, Marshal.SizeOf<INPUT>());
 
-            Thread.Sleep(150);  // 关键：等微信把文字完全插入，再做下一步（退格/下次粘贴），否则会被吞
+            _lastPasteMs = Environment.TickCount64;   // 记下粘贴时刻，立即返回（不再干等 150ms）
         }
+    }
+
+    /// <summary>可能破坏上一次粘贴结果的操作（退格/打字/回车）前调用：距上次粘贴不足间隔就补齐，等微信插完</summary>
+    private static void WaitForSettle()
+    {
+        var need = MinPasteGapMs - (Environment.TickCount64 - _lastPasteMs);
+        if (need > 0) Thread.Sleep((int)need);
     }
 
     /// <summary>Win32 剪贴板写入 Unicode 文本（控制台进程无需 STA；重试避开微信等占用剪贴板）</summary>
@@ -168,6 +180,7 @@ public static class KeyboardControl
     {
         lock (InjectLock)
         {
+            WaitForSettle();
             for (var i = 0; i < count; i++)
             {
                 SendVk(VK_BACK);
@@ -179,7 +192,11 @@ public static class KeyboardControl
     /// <summary>发送回车键（手机按回车时电脑同步回车）</summary>
     public static void Enter()
     {
-        lock (InjectLock) SendVk(VK_RETURN);
+        lock (InjectLock)
+        {
+            WaitForSettle();
+            SendVk(VK_RETURN);
+        }
     }
 
     private static void SendVk(ushort vk)
